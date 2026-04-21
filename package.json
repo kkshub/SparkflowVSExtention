@@ -1,0 +1,160 @@
+{
+  "name": "sparkflows-extension",
+  "displayName": "Sparkflows",
+  "description": "Integrates with Sparkflows APIs to manage workflows and pipelines.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:sparkflows-projects"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sparkflows.executeFlow",
+        "title": "Sparkflows: Execute Flow",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sparkflows.copyFlowId",
+        "title": "Sparkflows: Copy ID"
+      },
+      {
+        "command": "sparkflows.refreshProjects",
+        "title": "Sparkflows: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sparkflows.testConnection",
+        "title": "Sparkflows: Test Connection",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "sparkflows.setToken",
+        "title": "Sparkflows: Set Profile Token",
+        "icon": "$(key)"
+      },
+      {
+        "command": "sparkflows.switchProfile",
+        "title": "Sparkflows: Switch Profile",
+        "icon": "$(account)"
+      },
+      {
+        "command": "sparkflows.setServerUrl",
+        "title": "Sparkflows: Set Server URL",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "sparkflows.showHistory",
+        "title": "Sparkflows: Show History",
+        "icon": "$(history)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sparkflows",
+          "title": "Sparkflows",
+          "icon": "$(server-environment)"
+        }
+      ]
+    },
+    "views": {
+      "sparkflows": [
+        {
+          "id": "sparkflows-projects",
+          "name": "Projects"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "sparkflows.setServerUrl",
+          "when": "view == sparkflows-projects",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sparkflows.setToken",
+          "when": "view == sparkflows-projects",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sparkflows.switchProfile",
+          "when": "view == sparkflows-projects",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sparkflows.testConnection",
+          "when": "view == sparkflows-projects",
+          "group": "navigation@4"
+        },
+        {
+          "command": "sparkflows.showHistory",
+          "when": "view == sparkflows-projects",
+          "group": "navigation@5"
+        },
+        {
+          "command": "sparkflows.refreshProjects",
+          "when": "view == sparkflows-projects",
+          "group": "navigation@6"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "sparkflows.executeFlow",
+          "when": "view == sparkflows-projects && viewItem =~ /^(workflow|pipeline)$/",
+          "group": "inline"
+        },
+        {
+          "command": "sparkflows.copyFlowId",
+          "when": "view == sparkflows-projects && viewItem =~ /^(workflow|pipeline)$/"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Sparkflows",
+      "properties": {
+        "sparkflows.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "Sparkflows Server URL"
+        },
+        "sparkflows.profile": {
+          "type": "string",
+          "default": "default",
+          "description": "Active server profile name (e.g., dev, prod)"
+        },
+        "sparkflows.defaultProjectId": {
+          "type": "number",
+          "default": null,
+          "description": "Default Project ID to load workflows and pipelines"
+        },
+        "sparkflows.pollingIntervalMs": {
+          "type": "number",
+          "default": 10000,
+          "description": "Interval in milliseconds to poll for execution status."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.11.18",
+    "typescript": "^5.1.3"
+  },
+  "dependencies": {
+    "axios": "^1.4.0"
+  }
+}
