@@ -3,8 +3,13 @@
   "displayName": "Sparkflows",
   "description": "Integrates with Sparkflows APIs to manage workflows and pipelines.",
   "version": "0.0.1",
+  "publisher": "Sparkflows",
   "engines": {
     "vscode": "^1.80.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kkshub/SparkflowVSExtention.git"
   },
   "categories": [
     "Other"
