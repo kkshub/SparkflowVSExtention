@@ -92,4 +92,15 @@ export class ApiClient {
       state: data.state || 'Unknown'
     };
   }
+
+  public async executeWorkflow(workflowId: number): Promise<number> {
+    const payload = { workflowId };
+    const response = await this.client.post('/api/v1/workflow/execute', payload);
+    return response.data;
+  }
+
+  public async getWorkflowExecutionStatus(executionId: number): Promise<string> {
+    const response = await this.client.get(`/api/v1/workflow-executions/${executionId}/status`);
+    return response.data;
+  }
 }

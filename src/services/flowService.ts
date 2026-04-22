@@ -3,6 +3,7 @@ import { FlowItem, HistoryItem } from '../models';
 import { Constants } from '../utils/constants';
 import { ExecutionLogPanel } from '../views/executionLogPanel';
 import { HistoryPanel } from '../views/historyPanel';
+import { ApiClient } from './apiClient';
 
 export class FlowService {
   private static instance: FlowService;
@@ -34,13 +35,12 @@ export class FlowService {
     });
 
     try {
-      // Since specific endpoints are not provided, we mock the API hit based on category requirement
+      let executionId: number | null = null;
       if (item.category === 'workflow') {
-        // Mock workflow execution API
-        // await axios.post(`/api/v1/workflows/${item.id}/execute`);
+        executionId = await ApiClient.getInstance().executeWorkflow(item.id);
       } else {
         // Mock pipeline execution API
-        // await axios.post(`/api/v1/pipelines/${item.id}/execute`);
+        // executionId = await axios.post(`/api/v1/pipelines/${item.id}/execute`);
       }
 
       this.recordHistory({
@@ -53,7 +53,7 @@ export class FlowService {
         status: 'In Progress'
       });
 
-      this.pollExecutionStatus(item, logPanel);
+      this.pollExecutionStatus(item, logPanel, executionId);
 
     } catch (error: any) {
       logPanel.addLog({
@@ -67,7 +67,7 @@ export class FlowService {
     }
   }
 
-  private pollExecutionStatus(item: FlowItem, logPanel: ExecutionLogPanel) {
+  private pollExecutionStatus(item: FlowItem, logPanel: ExecutionLogPanel, executionId: number | null) {
     const config = vscode.workspace.getConfiguration();
     const intervalMs = config.get<number>(Constants.SETTINGS.POLLING_INTERVAL_MS) || 10000;
 
@@ -75,29 +75,45 @@ export class FlowService {
     const intervalId = setInterval(async () => {
       attempts++;
       
-      logPanel.addLog({
-        name: item.name,
-        id: item.id.toString(),
-        timestamp: Date.now(),
-        status: 'Running'
-      });
+      let currentStatus = 'Running';
 
-      // MOCK POLLING API: e.g. await axios.get(`/api/v1/${item.category === 'workflow' ? 'workflows' : 'pipelines'}/${item.id}/status`);
-      
-      // Stop condition for mock
-      if (attempts >= 3) {
-        clearInterval(intervalId);
-        
+      try {
+        if (item.category === 'workflow' && executionId !== null) {
+          currentStatus = await ApiClient.getInstance().getWorkflowExecutionStatus(executionId);
+        } else {
+          // Mock pipeline completion
+          if (attempts >= 3) {
+            currentStatus = 'Completed';
+          }
+        }
+      } catch (e: any) {
+        currentStatus = 'Failed';
         logPanel.addLog({
           name: item.name,
           id: item.id.toString(),
           timestamp: Date.now(),
-          status: 'Completed'
+          status: 'Failed',
+          errorMessage: e.message
         });
+      }
 
-        this.updateLatestHistoryStatus('Success');
+      logPanel.addLog({
+        name: item.name,
+        id: item.id.toString(),
+        timestamp: Date.now(),
+        status: currentStatus as any
+      });
+
+      if (currentStatus === 'COMPLETED' || currentStatus === 'FAILED') {
+        clearInterval(intervalId);
         
-        vscode.window.showInformationMessage(`Execution of ${item.category} "${item.name}" completed successfully.`);
+        this.updateLatestHistoryStatus(currentStatus === 'COMPLETED' ? 'Success' : 'Failed');
+        
+        if (currentStatus === 'COMPLETED') {
+          vscode.window.showInformationMessage(`Execution of ${item.category} "${item.name}" completed successfully.`);
+        } else {
+          vscode.window.showErrorMessage(`Execution of ${item.category} "${item.name}" failed.`);
+        }
       }
     }, intervalMs);
   }
