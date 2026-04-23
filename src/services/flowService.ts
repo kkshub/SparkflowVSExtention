@@ -38,9 +38,8 @@ export class FlowService {
       let executionId: number | null = null;
       if (item.category === 'workflow') {
         executionId = await ApiClient.getInstance().executeWorkflow(item.id);
-      } else {
-        // Mock pipeline execution API
-        // executionId = await axios.post(`/api/v1/pipelines/${item.id}/execute`);
+      } else if (item.category === 'pipeline') {
+        executionId = await ApiClient.getInstance().executePipeline(item.name, item.projectId);
       }
 
       this.recordHistory({
@@ -75,19 +74,15 @@ export class FlowService {
     const intervalId = setInterval(async () => {
       attempts++;
       
-      let currentStatus = 'Running';
+      let rawStatus = 'RUNNING';
 
       try {
         if (item.category === 'workflow' && executionId !== null) {
-          currentStatus = await ApiClient.getInstance().getWorkflowExecutionStatus(executionId);
-        } else {
-          // Mock pipeline completion
-          if (attempts >= 3) {
-            currentStatus = 'Completed';
-          }
+          rawStatus = await ApiClient.getInstance().getWorkflowExecutionStatus(executionId);
+        } else if (item.category === 'pipeline' && executionId !== null) {
+          rawStatus = await ApiClient.getInstance().getPipelineExecutionStatus(executionId);
         }
       } catch (e: any) {
-        currentStatus = 'Failed';
         logPanel.addLog({
           name: item.name,
           id: item.id.toString(),
@@ -95,21 +90,36 @@ export class FlowService {
           status: 'Failed',
           errorMessage: e.message
         });
+        clearInterval(intervalId);
+        this.updateLatestHistoryStatus('Failed');
+        return;
+      }
+
+      // Normalize status
+      const s = rawStatus.toUpperCase();
+      let status: 'Submitted' | 'Running' | 'Completed' | 'Failed' = 'Running';
+
+      if (['STARTING', 'PENDING', 'SUBMITTED'].includes(s)) {
+        status = 'Submitted';
+      } else if (['COMPLETED', 'SKIPPED', 'STOPPED', 'STOP'].includes(s)) {
+        status = 'Completed';
+      } else if (['FAILED', 'KILLED', 'TIMEOUT'].includes(s)) {
+        status = 'Failed';
       }
 
       logPanel.addLog({
         name: item.name,
         id: item.id.toString(),
         timestamp: Date.now(),
-        status: currentStatus as any
+        status: status
       });
 
-      if (currentStatus === 'COMPLETED' || currentStatus === 'FAILED') {
+      if (status === 'Completed' || status === 'Failed') {
         clearInterval(intervalId);
         
-        this.updateLatestHistoryStatus(currentStatus === 'COMPLETED' ? 'Success' : 'Failed');
+        this.updateLatestHistoryStatus(status === 'Completed' ? 'Success' : 'Failed');
         
-        if (currentStatus === 'COMPLETED') {
+        if (status === 'Completed') {
           vscode.window.showInformationMessage(`Execution of ${item.category} "${item.name}" completed successfully.`);
         } else {
           vscode.window.showErrorMessage(`Execution of ${item.category} "${item.name}" failed.`);

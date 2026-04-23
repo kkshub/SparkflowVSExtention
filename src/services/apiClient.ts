@@ -8,6 +8,8 @@ export class ApiClient {
   private static instance: ApiClient;
   private client: AxiosInstance;
 
+  private status = ['RUNNING', 'STOPPED', 'COMPLETED', 'FAILED', 'STARTING', 'STOP', 'KILLED', 'STOPPING', 'TIMEOUT', 'PENDING', 'SKIPPED', 'SKIPPED'];
+
   private constructor() {
     this.client = axios.create();
 
@@ -102,5 +104,15 @@ export class ApiClient {
   public async getWorkflowExecutionStatus(executionId: number): Promise<string> {
     const response = await this.client.get(`/api/v1/workflow-executions/${executionId}/status`);
     return response.data;
+  }
+
+  public async executePipeline(pipelineName: string, projectId: number): Promise<number> {
+    const response = await this.client.post(`/api/v1/executePipeline?pipelineName=${encodeURIComponent(pipelineName)}&projectId=${projectId}`, {});
+    return response.data;
+  }
+
+  public async getPipelineExecutionStatus(executionId: number): Promise<string> {
+    const response = await this.client.get(`/api/v1/pipelines/execution/${executionId}/refreshStatus`);
+    return this.status[response.data.status];
   }
 }

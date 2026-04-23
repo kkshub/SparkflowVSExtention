@@ -87,7 +87,7 @@ export class HistoryPanel {
       `${h.id},${h.type},"${h.name}",${h.flowId},${h.profile},${new Date(h.timestamp).toISOString()},${h.status}`
     );
 
-    const csvContent = [header, ...rows].join('\\n');
+    const csvContent = [header, ...rows].join('\r\n');
 
     const uri = await vscode.window.showSaveDialog({
       filters: { 'CSV': ['csv'] },
